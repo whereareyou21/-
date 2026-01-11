@@ -1,21 +1,21 @@
-Веб-приложение для прогнозирования вероятности покупки туристической страховки с использованием машинного обучения.
+A web application for predicting the likelihood of purchasing travel insurance using machine learning.
 
-Описание проекта:
-Данный проект направлен на решение задачи классификации: предсказание, купит ли клиент страховой полис. Инструмент предназначен для отделов маркетинга и продаж страховых компаний, чтобы приоритизировать "горячих" клиентов и оптимизировать маркетинговый бюджет.
+Project description:
+This project aims to solve a classification problem: predicting whether a customer will purchase an insurance policy. The tool is designed for the marketing and sales departments of insurance companies to prioritize “hot” customers and optimize their marketing budget.
 
-Стек технологий:
+Technology stack:
 - Python (Pandas, NumPy)
 - Scikit-learn (Gradient Boosting Classifier)
-- Joblib (Сериализация моделей)
-- treamlit (Интерактивный веб-интерфейс)
-- FastAPI (Опционально, в качестве backend-сервиса)
+- Joblib (Model serialization)
+- treamlit (Interactive web interface)
+- FastAPI (Optional, as a backend service)
 
-Результаты моделирования:
-Модель была обучена на данных о 2000 клиентах. 
-Алгоритм - Gradient Boosting 
-Точность (Accuracy) ~84.17%
-Ключевые признаки:
-    1. `AnnualIncome` (Годовой доход)
-    2. `EverTravelledAbroad` (Опыт поездок за границу)
-    3. `Age` (Возраст)
+Modeling results:
+The model was trained on data from 2,000 customers. 
+Algorithm - Gradient Boosting 
+Accuracy ~84.17%
+Key features:
+1. `AnnualIncome` (Annual income)
+2. `EverTravelledAbroad` (Experience traveling abroad)
+3. `Age` (Age)
 
