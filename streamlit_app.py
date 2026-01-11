@@ -1,92 +1,126 @@
 import streamlit as st
 import joblib
 import pandas as pd
-import numpy as np
 
-# Настраиваем саму страницу
-st.set_page_config(page_title="Страховой скоринг")
+# Page settings
+st.set_page_config(page_title="Insurance Scoring", layout="wide")
 
-# Функцию загрузки кэшируем, чтобы приложение не тормозило
 @st.cache_resource
-def load_model_and_preprocessor():
-    # Загружаем файлы, которые мы скачали из Colab
+def load_assets():
     model = joblib.load('insurance_model.pkl')
     preprocessor = joblib.load('preprocessor.pkl')
     return model, preprocessor
 
-# Пробуем загрузить модель, если файлов нет — выведем понятную ошибку
-try:
-    model, preprocessor = load_model_and_preprocessor()
-except Exception as e:
-    st.error(f"Не удалось загрузить файлы модели. Ошибка: {e}")
-    st.stop()
+model, preprocessor = load_assets()
 
-st.title(" Прогноз спроса на турстраховку")
-st.write("Инструмент для оценки вероятности покупки страхового полиса клиентом.")
+# --- Language Selection ---
+with st.sidebar:
+    st.title("Settings / Настройки")
+    lang = st.radio("Select Language / Выберите язык", ["English", "Русский"])
 
-# --- Блок ввода данных ---
-st.subheader("Анкета клиента")
-c1, c2 = st.columns(2)
+# --- Translation Dictionary ---
+texts = {
+    "English": {
+        "title": "Travel Insurance Propensity Scoring",
+        "desc": "ML-driven solution for identifying high-propensity customers.",
+        "header": "Customer Profile",
+        "age": "Age",
+        "income": "Annual Income (INR)",
+        "family": "Family Members",
+        "emp": "Employment Sector",
+        "grad": "Higher Education",
+        "chronic": "Chronic Conditions",
+        "flyer": "Frequent Flyer Status",
+        "abroad": "Previous International Travel",
+        "button": "Calculate Probability",
+        "result": "Conversion Probability",
+        "high": "Status: High-Priority Lead",
+        "med": "Status: Medium-Priority Lead",
+        "low": "Status: Low-Priority Lead",
+        "details": "Model Methodology",
+        "private": "Private Sector/Self Employed",
+        "gov": "Government Sector"
+    },
+    "Русский": {
+        "title": "Скоринг туристического страхования",
+        "desc": "ML-решение для выявления наиболее перспективных клиентов.",
+        "header": "Профиль клиента",
+        "age": "Возраст",
+        "income": "Годовой доход (в рупиях)",
+        "family": "Членов семьи",
+        "emp": "Тип занятости",
+        "grad": "Высшее образование",
+        "chronic": "Хронические заболевания",
+        "flyer": "Часто летает самолетами",
+        "abroad": "Был за границей ранее",
+        "button": "Рассчитать вероятность",
+        "result": "Вероятность покупки",
+        "high": "Статус: Высокий приоритет",
+        "med": "Статус: Средний приоритет",
+        "low": "Статус: Низкий приоритет",
+        "details": "Методология модели",
+        "private": "Частный сектор / ИП",
+        "gov": "Госслужба"
+    }
+}
 
-with c1:
-    age = st.number_input("Возраст клиента", 18, 100, 28)
-    income = st.number_input("Годовой доход (INR)", 100000, 2000000, 800000, step=50000)
-    family = st.slider("Человек в семье", 1, 10, 4)
+t = texts[lang]
 
-with c2:
-    emp = st.selectbox("Сфера занятости", 
-                       ["Private Sector/Self Employed", "Government Sector"],
-                       format_func=lambda x: "Частный сектор / ИП" if "Private" in x else "Госслужба")
-    
-    grad = st.radio("Высшее образование", ["Yes", "No"], 
-                    format_func=lambda x: "Да" if x == "Yes" else "Нет")
-    
-    chronic = st.checkbox("Есть хронические заболевания")
-
-# Эти два параметра — самые важные по результатам моего анализа
+# --- UI Layout ---
+st.title(t["title"])
+st.write(t["desc"])
 st.markdown("---")
-flyer = st.selectbox("Клиент часто летает самолетами?", ["Yes", "No"], 
-                     format_func=lambda x: "Да" if x == "Yes" else "Нет")
-abroad = st.selectbox("Клиент бывал за границей ранее?", ["Yes", "No"],
-                      format_func=lambda x: "Да" if x == "Yes" else "Нет")
 
-# --- Кнопка расчета ---
-if st.button("Проанализировать"):
-    # Собираем данные в DataFrame (важно соблюдать названия колонок из обучения!)
-    input_data = pd.DataFrame([{
+st.subheader(t["header"])
+col1, col2, col3 = st.columns(3)
+
+with col1:
+    age = st.number_input(t["age"], 18, 100, 28)
+    income = st.number_input(t["income"], 100000, 2500000, 800000)
+    family = st.slider(t["family"], 1, 10, 4)
+
+with col2:
+    # We display translated text but keep original values for the model
+    emp_display = [t["private"], t["gov"]]
+    emp_choice = st.selectbox(t["emp"], emp_display)
+    emp_raw = "Private Sector/Self Employed" if emp_choice == t["private"] else "Government Sector"
+    
+    grad_choice = st.radio(t["grad"], ["Yes", "No"], format_func=lambda x: "Да" if (x == "Yes" and lang == "Русский") else x)
+    chronic = st.checkbox(t["chronic"])
+
+with col3:
+    flyer_choice = st.selectbox(t["flyer"], ["Yes", "No"], format_func=lambda x: "Да" if (x == "Yes" and lang == "Русский") else x)
+    abroad_choice = st.selectbox(t["abroad"], ["Yes", "No"], format_func=lambda x: "Да" if (x == "Yes" and lang == "Русский") else x)
+
+if st.button(t["button"]):
+    input_df = pd.DataFrame([{
         "Age": age,
-        "Employment Type": emp,
-        "GraduateOrNot": grad,
+        "Employment Type": emp_raw,
+        "GraduateOrNot": grad_choice,
         "AnnualIncome": income,
         "FamilyMembers": family,
         "ChronicDiseases": 1 if chronic else 0,
-        "FrequentFlyer": flyer,
-        "EverTravelledAbroad": abroad
+        "FrequentFlyer": flyer_choice,
+        "EverTravelledAbroad": abroad_choice
     }])
 
-    # Прогоняем через пайплайн и делаем прогноз
-    processed = preprocessor.transform(input_data)
-    prediction = model.predict(processed)[0]
-    probability = model.predict_proba(processed)[0][1]
-
-    # Вывод результата
-    st.markdown("### Результат анализа")
-    res_col, prob_col = st.columns(2)
+    processed_data = preprocessor.transform(input_df)
+    probability = model.predict_proba(processed_data)[0][1]
+    
+    st.markdown("---")
+    res_col, bar_col = st.columns([1, 2])
     
     with res_col:
-        if prediction == 1:
-            st.success("РЕКОМЕНДАЦИЯ: Предложить расширенный пакет")
-        else:
-            st.warning("РЕКОМЕНДАЦИЯ: Стандартное предложение")
+        st.metric(t["result"], f"{probability*100:.2f}%")
+        if probability > 0.70: st.info(t["high"])
+        elif 0.35 <= probability <= 0.70: st.info(t["med"])
+        else: st.info(t["low"])
 
-    with prob_col:
-        st.metric("Вероятность покупки", f"{probability*100:.1f}%")
-        st.progress(int(probability * 100))
+    with bar_col:
+        st.progress(probability)
 
-# Маленькое пояснение 
-with st.expander("Заметки разработчика"):
-    st.write("""
-        * Модель: Gradient Boosting Classifier.
-        * Обучена на датасете Travel Insurance (2000 записей).
-        * Основные веса: Доход и наличие поездок за границу.
-    """)
+with st.expander(t["details"]):
+    if lang == "English":
+        st.write("- **Algorithm:** Gradient Boosting Classifier\n- **Accuracy:** 84.17%")
+    else:
+        st.write("- **Алгоритм:** Градиентный бустинг\n- **Точность:** 84.17%")
